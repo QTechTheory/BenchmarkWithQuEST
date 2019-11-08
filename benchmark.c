@@ -161,7 +161,7 @@ int main (int narg, char *varg[]) {
         assert(NUM_NODES==1 && NUM_THREADS==1, "IS_GPU=1 requires NUM_NODES=NUM_THREADS=1.", env.rank);
     if (TEST_TYPE == 1)
         assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.", env.rank);
-    assert(MEM_SIZE > 1, "MEM_SIZE must be at least 1 GiB.", env.rank);
+    assert(MEM_SIZE >= 1, "MEM_SIZE must be at least 1 GiB.", env.rank);
         
     int NUM_QUBITS = floor(26 + log2(MEM_SIZE - .5)) + ((NUM_NODES>1)? (-1):0);
     
@@ -181,7 +181,7 @@ int main (int narg, char *varg[]) {
     
     // perform benchmark
     long double avDur, varDur;
-    timeRepeatFuncCalls(testFunc, qureg, 10, &avDur, &varDur, env.rank);
+    timeRepeatFuncCalls(testFunc, qureg, NUM_SAMPLES, &avDur, &varDur, env.rank);
     
     if (env.rank == 0)
         printf("\nDone!\nDuration: %Lg (mean) %Lg (variance)\n\n", avDur, varDur);
