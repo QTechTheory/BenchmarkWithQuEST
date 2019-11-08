@@ -163,7 +163,7 @@ int main (int narg, char *varg[]) {
         assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.", env.rank);
     assert(MEM_SIZE >= 1, "MEM_SIZE must be at least 1 GiB.", env.rank);
         
-    int NUM_QUBITS = floor(26 + log2(MEM_SIZE - .5)) + ((NUM_NODES>1)? (-1):0);
+    int NUM_QUBITS = floor(26 + log2(NUM_NODES*MEM_SIZE - .5)) + ((NUM_NODES>1)? (-1):0);
     
     // report args
     char argsBuff[1000];
