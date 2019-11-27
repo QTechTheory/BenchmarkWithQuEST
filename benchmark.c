@@ -77,7 +77,7 @@ long double timeFuncCall(void (*func)(void)) {
 
 void timeRepeatFuncCalls(
     void (*func)(void), int numReps, 
-    long double *avDur, long double *varDur, int rank
+    long double *avDur, long double *varDur
 ) {    
     long double sumDur = 0;
     long double sumSquaredDur = 0;
@@ -88,10 +88,10 @@ void timeRepeatFuncCalls(
     // repeatedly time the test
     for (int i=0; i<numReps; i++) {
         
-        // indicate progress
-        for (int percent=0; percent<=100; percent+=10)
+        // indicate progress (only if numReps>1)
+        for (int percent=0; percent<=100 && (numReps>1); percent+=10)
             if (i == floor(percent * numReps / 100))
-                if (rank == 0) {
+                if (env.rank == 0) {
                     printf("%d%% ", percent);
                     break;
                 }
@@ -109,9 +109,9 @@ void timeRepeatFuncCalls(
     *varDur = (sumSquaredDur/numReps) - (*avDur)*(*avDur);
 }
 
-void assert(int cond, char* msg, int rank) {
+void assert(int cond, char* msg) {
     if (!cond) {
-        if (rank == 0)
+        if (env.rank == 0)
             printf("ERROR: %s\nExiting...\n", msg);
         exit(1);
     }
@@ -127,7 +127,7 @@ int main (int narg, char *varg[]) {
         
         if (env.rank == 0)
             printf(
-                "Insufficient args! Run as:\n\n"
+                "Insufficient args! (requires 6, given %d) Run as:\n\n"
                 "./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES\n\n"
                 "where\n\n"
                 "NUM_NODES is the number of employed nodes (1 if not distributed).\n\t"
@@ -152,7 +152,7 @@ int main (int narg, char *varg[]) {
                 "The average duration and variance of the test is written to file (by node rank 0):\n\t"
                 "'results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE].txt'\n"
                 "(where NUM_QUBITS is derived from MEM_SIZE and NUM_NODES) along with "
-                "copies of these arguments.\n\n");
+                "copies of these arguments.\n\n", narg-1);
         exit(1);
     }
     
@@ -166,12 +166,12 @@ int main (int narg, char *varg[]) {
     int NUM_SAMPLES = atoi(varg[i++]);
     
     // validate args 
-    assert((NUM_NODES&(NUM_NODES-1))==0, "NUM_NODES must be an exponent of 2.", env.rank);
+    assert((NUM_NODES&(NUM_NODES-1))==0, "NUM_NODES must be an exponent of 2.");
     if (IS_GPU)
-        assert(NUM_NODES==1 && NUM_THREADS==1, "IS_GPU=1 requires NUM_NODES=NUM_THREADS=1.", env.rank);
+        assert(NUM_NODES==1 && NUM_THREADS==1, "IS_GPU=1 requires NUM_NODES=NUM_THREADS=1.");
     if (TEST_TYPE == 1)
-        assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.", env.rank);
-    assert(MEM_SIZE >= 1, "MEM_SIZE must be at least 1 GiB.", env.rank);
+        assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.",);
+    assert(MEM_SIZE >= 1, "MEM_SIZE must be at least 1 GiB.");
         
     int NUM_QUBITS = floor(26 + log2(NUM_NODES*MEM_SIZE - .5)) + ((NUM_NODES>1)? (-1):0);
     
@@ -191,7 +191,7 @@ int main (int narg, char *varg[]) {
     
     // perform benchmark
     long double avDur, varDur;
-    timeRepeatFuncCalls(testFunc, NUM_SAMPLES, &avDur, &varDur, env.rank);
+    timeRepeatFuncCalls(testFunc, NUM_SAMPLES, &avDur, &varDur);
     
     if (env.rank == 0)
         printf("\nDone!\nDuration: %Lg (mean) %Lg (variance)\n\n", avDur, varDur);
@@ -221,5 +221,4 @@ int main (int narg, char *varg[]) {
     destroyQureg(qureg, env);
     destroyQuESTEnv(env);
     return 0;
-
 }
