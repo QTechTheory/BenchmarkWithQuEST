@@ -123,12 +123,12 @@ int main (int narg, char *varg[]) {
     // setup immediately to get rank info
     env = createQuESTEnv();
     
-    if (narg != 7) {
+    if (narg != 7 && narg != 8) {
         
         if (env.rank == 0)
             printf(
-                "Insufficient args! (requires 6, given %d) Run as:\n\n"
-                "./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES\n\n"
+                "Insufficient args! (requires 6 or 7, given %d) Run as:\n\n"
+                "./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES [FN_SUFFIX]\n\n"
                 "where\n\n"
                 "NUM_NODES is the number of employed nodes (1 if not distributed).\n\t"
                     "Must be a power of 2.\n\n"
@@ -146,11 +146,12 @@ int main (int narg, char *varg[]) {
                     "Testing will be performed with as big a quantum state-vector as can fit, "
                     "calculated via:\n\t\t"
                         "NUM_QUBITS = Floor[26 + Log2[MEM_SIZE - .5]]\n\t"
-                    "which assumes double-precision and an overhead of ~500 MiB.\n"
+                    "which assumes double-precision and an overhead of ~500 MiB.\n\t"
                     "Note distributed tests will simulate 1 fewer qubit, due to comm overheads.\n\n"
                 "NUM_SAMPLES is the number of repetitions of the test (informing the mean and variance).\n\n"
+                "FN_SUFFIX is an optional string (containing no spaces) to suffix to the output filename.\n\n"
                 "The average duration and variance of the test is written to file (by node rank 0):\n\t"
-                "'results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE].txt'\n"
+                "'results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE][FN_SUFFIX].txt'\n"
                 "(where NUM_QUBITS is derived from MEM_SIZE and NUM_NODES) along with "
                 "copies of these arguments.\n\n", narg-1);
         exit(1);
@@ -164,13 +165,14 @@ int main (int narg, char *varg[]) {
     int TEST_TYPE   = atoi(varg[i++]);
     int MEM_SIZE    = atoi(varg[i++]);
     int NUM_SAMPLES = atoi(varg[i++]);
+    char* FN_SUFFIX = (narg==8)? varg[i++]:"";
     
     // validate args 
     assert((NUM_NODES&(NUM_NODES-1))==0, "NUM_NODES must be an exponent of 2.");
     if (IS_GPU)
         assert(NUM_NODES==1 && NUM_THREADS==1, "IS_GPU=1 requires NUM_NODES=NUM_THREADS=1.");
     if (TEST_TYPE == 1)
-        assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.",);
+        assert(IS_GPU, "TEST_TYPE=1 requires IS_GPU=1.");
     assert(MEM_SIZE >= 1, "MEM_SIZE must be at least 1 GiB.");
         
     int NUM_QUBITS = floor(26 + log2(NUM_NODES*MEM_SIZE - .5)) + ((NUM_NODES>1)? (-1):0);
@@ -179,8 +181,8 @@ int main (int narg, char *varg[]) {
     char argsBuff[1000];
     sprintf(argsBuff, 
         "NUM_NODES: %d\nNUM_THREADS: %d\nIS_GPU: %d\n"
-        "TEST_TYPE: %d\nMEM_SIZE: %d\nNUM_QUBITS: %d\nNUM_SAMPLES: %d\n",
-        NUM_NODES, NUM_THREADS, IS_GPU, TEST_TYPE, MEM_SIZE, NUM_QUBITS, NUM_SAMPLES);
+        "TEST_TYPE: %d\nMEM_SIZE: %d\nNUM_QUBITS: %d\nNUM_SAMPLES: %d\nFN_SUFFIX: %s\n",
+        NUM_NODES, NUM_THREADS, IS_GPU, TEST_TYPE, MEM_SIZE, NUM_QUBITS, NUM_SAMPLES, FN_SUFFIX);
         
     if (env.rank == 0)
         printf("\n%s\nSimulating...\n", argsBuff);
@@ -199,8 +201,8 @@ int main (int narg, char *varg[]) {
     // create output filename
     char fnBuff[500];
     sprintf(fnBuff,
-        "results/data_%dn_%dt_%dg_%dm_%dq_%ds_test%d.txt",
-        NUM_NODES, NUM_THREADS, IS_GPU, MEM_SIZE, NUM_QUBITS, NUM_SAMPLES, TEST_TYPE);
+        "results/data_%dn_%dt_%dg_%dm_%dq_%ds_test%d%s.txt",
+        NUM_NODES, NUM_THREADS, IS_GPU, MEM_SIZE, NUM_QUBITS, NUM_SAMPLES, TEST_TYPE, FN_SUFFIX);
         
     if (env.rank == 0)
         printf("Writing results to:\n%s\n\n", fnBuff);
