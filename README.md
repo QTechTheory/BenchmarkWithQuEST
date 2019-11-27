@@ -26,6 +26,11 @@ make
 
 ## Running tests
 
+First, ensure a results folder exists (with write permissions):
+```bash
+mkdir results
+```
+
 Executable `benchmark` accepts cmd arguments:
 ```bash
 ./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES
@@ -74,5 +79,6 @@ make GPUACCELERATED=1
 
 All needed information will be written to files, with filenames:
 `
-results_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[TEST_TYPE]test_[NUM_QUBITS]q.txt
+results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE].txt
 `
+which is unique for every differentiable test.

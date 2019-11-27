@@ -9,13 +9,17 @@
 #include "QuEST.h"
 
 
-void circTest(Qureg qureg) {
+QuESTEnv env;
+Qureg qureg;
+
+
+void circTest(void) {
     int numQb = qureg.numQubitsRepresented;
     
     initPlusState(qureg);
     
-    // some arbitrary circuit requiring invoking all modes of caching
-    for (int rep=0; rep<10; rep++) {
+    // some arbitrary circuit acting on every qubit
+    for (int rep=0; rep<2; rep++) {
         for (int i=0; i<numQb; i++)
             hadamard(qureg, i);
         for (int i=0; i<numQb; i++)
@@ -23,17 +27,19 @@ void circTest(Qureg qureg) {
         for (int i=0; i<numQb; i++)
             controlledRotateY(qureg, i, (i+2)%numQb, .3);
     }
+    
+    syncQuESTEnv(env);
 }
 
 
-void memTest(Qureg qureg) {
+void memTest(void) {
     int numQb = qureg.numQubitsRepresented;
     
     initPlusState(qureg);
     
     // just copying data back and forth between RAM and VRAM
     // (arbitrarily modifying to spook off compilers)
-    for (int rep=0; rep<20; rep++) {
+    for (int rep=0; rep<5; rep++) {
         copyStateFromGPU(qureg);
         
         // multiply by i (phase fac of PI)
@@ -45,10 +51,12 @@ void memTest(Qureg qureg) {
         copyStateToGPU(qureg);
         sqrtSwapGate(qureg, rep%numQb, (rep+1)%numQb);
     }
+    
+    syncQuESTEnv(env);
 }
 
 
-long double timeFuncCall(void (*func)(Qureg), Qureg arg) {
+long double timeFuncCall(void (*func)(void)) {
 
     // start timing
     struct timeval timeInst;
@@ -56,7 +64,7 @@ long double timeFuncCall(void (*func)(Qureg), Qureg arg) {
     long double startTime = (
 		timeInst.tv_sec + (long double) timeInst.tv_usec/pow(10,6));
         
-    func(arg);
+    func();
     
     // stop timing
     gettimeofday(&timeInst, NULL);
@@ -68,7 +76,7 @@ long double timeFuncCall(void (*func)(Qureg), Qureg arg) {
 
 
 void timeRepeatFuncCalls(
-    void (*func)(Qureg), Qureg arg, int numReps, 
+    void (*func)(void), int numReps, 
     long double *avDur, long double *varDur, int rank
 ) {    
     long double sumDur = 0;
@@ -83,11 +91,13 @@ void timeRepeatFuncCalls(
         // indicate progress
         for (int percent=0; percent<=100; percent+=10)
             if (i == floor(percent * numReps / 100))
-                if (rank == 0)
+                if (rank == 0) {
                     printf("%d%% ", percent);
+                    break;
+                }
                     
         // perform test
-        long double dur = timeFuncCall(func, arg);
+        long double dur = timeFuncCall(func);
         sumDur += dur;
         sumSquaredDur += dur*dur;
     }
@@ -111,7 +121,7 @@ void assert(int cond, char* msg, int rank) {
 int main (int narg, char *varg[]) {
     
     // setup immediately to get rank info
-    QuESTEnv env = createQuESTEnv();
+    env = createQuESTEnv();
     
     if (narg != 7) {
         
@@ -140,7 +150,7 @@ int main (int narg, char *varg[]) {
                     "Note distributed tests will simulate 1 fewer qubit, due to comm overheads.\n\n"
                 "NUM_SAMPLES is the number of repetitions of the test (informing the mean and variance).\n\n"
                 "The average duration and variance of the test is written to file (by node rank 0):\n\t"
-                "'results_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[TEST_TYPE]test_[NUM_QUBITS]q.txt'\n"
+                "'results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE].txt'\n"
                 "(where NUM_QUBITS is derived from MEM_SIZE and NUM_NODES) along with "
                 "copies of these arguments.\n\n");
         exit(1);
@@ -176,12 +186,12 @@ int main (int narg, char *varg[]) {
         printf("\n%s\nSimulating...\n", argsBuff);
     
     // setup QuEST
-    Qureg qureg = createQureg(NUM_QUBITS, env);
-    void (*testFunc)(Qureg) = (TEST_TYPE==1)? memTest : circTest;
+    qureg = createQureg(NUM_QUBITS, env);
+    void (*testFunc)(void) = (TEST_TYPE==1)? memTest : circTest;
     
     // perform benchmark
     long double avDur, varDur;
-    timeRepeatFuncCalls(testFunc, qureg, NUM_SAMPLES, &avDur, &varDur, env.rank);
+    timeRepeatFuncCalls(testFunc, NUM_SAMPLES, &avDur, &varDur, env.rank);
     
     if (env.rank == 0)
         printf("\nDone!\nDuration: %Lg (mean) %Lg (variance)\n\n", avDur, varDur);
@@ -189,8 +199,8 @@ int main (int narg, char *varg[]) {
     // create output filename
     char fnBuff[500];
     sprintf(fnBuff,
-        "results_%dn_%dt_%dg_%dtest_%dq.txt",
-        NUM_NODES, NUM_THREADS, IS_GPU, TEST_TYPE, NUM_QUBITS);
+        "results/data_%dn_%dt_%dg_%dm_%dq_%ds_test%d.txt",
+        NUM_NODES, NUM_THREADS, IS_GPU, MEM_SIZE, NUM_QUBITS, NUM_SAMPLES, TEST_TYPE);
         
     if (env.rank == 0)
         printf("Writing results to:\n%s\n\n", fnBuff);
