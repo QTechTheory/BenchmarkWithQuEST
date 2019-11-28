@@ -1,4 +1,5 @@
-GPU_MEM=1 # GiB
+GPU_MEM=8 # GiB
+
 TIME_OUT=60 # seconds
 
 make clean
@@ -19,7 +20,7 @@ for test in 0 1; do
 done
 
 for test in 0 1; do
-    CUDA_VISIBLE_DEVICES=0 ./benchmark 1 1 1 $test $GPU_MEM $samp simulGPU0 &
-    CUDA_VISIBLE_DEVICES=1 ./benchmark 1 1 1 $test $GPU_MEM $samp simulGPU1 &
+    CUDA_VISIBLE_DEVICES=0 ./benchmark 1 1 1 $test $GPU_MEM $samp _simulGPU0 &
+    CUDA_VISIBLE_DEVICES=1 ./benchmark 1 1 1 $test $GPU_MEM $samp _simulGPU1 &
     wait
 done

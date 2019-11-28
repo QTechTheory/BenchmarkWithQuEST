@@ -1,8 +1,9 @@
-MAX_NODE_MEM=1 # GiB
+MAX_NODE_MEM=256 # GiB
 NUM_THREADS=16
+NUM_NODES=( 2 4 8 ) # add more 2^n until max number of nodes
+
 TIME_OUT=60 # seconds
 NUM_SAMPLES=5
-NUM_NODES=( 2 4 8 ) # add more 2^n until max number of nodes
 
 make clean
 make MULTITHREADED=1 DISTRIBUTED=1 GPUACCELERATED=0

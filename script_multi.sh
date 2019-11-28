@@ -1,7 +1,8 @@
-MAX_MEM=256 # GiB
+MAX_NODE_MEM=256 # GiB
+THREAD_VALS=( 8 16 ) # add more threads to this list if supported (biggest last)
+
 TIME_OUT=60 # seconds
 NUM_SAMPLES=5
-THREAD_VALS=( 8 16 ) # add more threads to this list if supported (biggest last)
 
 make clean
 make MULTITHREADED=1 DISTRIBUTED=0 GPUACCELERATED=0
@@ -21,5 +22,4 @@ for thr in ${THREAD_VALS[@]}; do
     done    
 done
 
-echo "Now performing final max-memory ($MAX_MEM GiB) max-threads ($THREAD_VALS) test (no time-out)"
-./benchmark 1 ${THREAD_VALS[-1]} 0 0 $MAX_MEM 1
+./benchmark 1 ${THREAD_VALS[-1]} 0 0 $MAX_NODE_MEM 1
