@@ -1,4 +1,5 @@
 GPU_MEM=8 # GiB
+NUM_GPUS=1 # per-node
 
 TIME_OUT=60 # seconds
 
@@ -20,7 +21,8 @@ for test in 0 1; do
 done
 
 for test in 0 1; do
-    CUDA_VISIBLE_DEVICES=0 ./benchmark 1 1 1 $test $GPU_MEM $samp _simulGPU0 &
-    CUDA_VISIBLE_DEVICES=1 ./benchmark 1 1 1 $test $GPU_MEM $samp _simulGPU1 &
-    wait
+   for i in $(seq 0 $((NUM_GPUS-1)) ); do
+       CUDA_VISIBLE_DEVICES=$i ./benchmark 1 1 1 $test $GPU_MEM $samp _simulGPU${i}_${NUM_GPUS} &
+   done
+   wait
 done
