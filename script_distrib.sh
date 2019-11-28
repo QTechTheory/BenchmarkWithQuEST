@@ -23,3 +23,5 @@ for nodes in ${NUM_NODES[@]}; do
         echo "test duration: $dur (completes when > $TIME_OUT)"
     done
 done
+
+mpirun -np ${NUM_NODES[-1]} ./benchmark ${NUM_NODES[-1]} $NUM_THREADS 0 0 $MAX_NODE_MEM 1
