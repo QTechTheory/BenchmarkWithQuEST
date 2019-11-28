@@ -23,6 +23,9 @@ NUM_SAMPLES=5
 ```
 If a particular test is too slow to endure (e.g. at the earliest and slowest computation in a sweep), `NUM_SAMPLES` can be reduced (to minimum `1`).
 
+> A warning when running tests with a job-scheduler: each `script_[name].sh` test will recompile the C code, and so
+> cannot be run simultaneously!
+
 ## (1) Serial
 [`script_serial.sh`](script_serial.sh) performs single-thread single-node benchmarking. It initially utilises `1 GiB` of RAM,
 doubling memory (increasing simulated qubits by 1) for every successful benchmark until they exceed `TIME_OUT`. 
