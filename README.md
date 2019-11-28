@@ -6,79 +6,54 @@ The responsible code is exclusively in `benchmark.c`.
 
 ## Kinds of testing
 
-There are two types of tests.
+There are two *types* of tests.
 One simulates random quantum circuits using QuEST, and the other involves copying memory back and forth between RAM and VRAM (when run with a GPU).
-The former test should be run on all hardware facilities (single-threaded, multithreaded, distributed, GPU-accelerated) while the latter only run with a GPU.
+The former test will be run on all hardware facilities (single-threaded, multithreaded, distributed, GPU-accelerated) while the latter only run with a GPU.
 
-The tests accept `MEM_SIZE`, the amount of available memory (in GiB), and will perform as large a simulation (allocating as large a state-vector as can fit in memory) as is possible. It is ok to lie and declare a smaller memory size if the otherwise simulated system is infeasibly large.
-
-In combination, these tests motivate measures of clock-speed, caching time, network bandwidth and RAM to VRAM bandwidth.
+In combination, these tests motivate measures of clock-speed, caching time, network bandwidth and RAM to VRAM bandwidth. They are wrapped into four test scripts.
 
 ## Compiling
 
-Modify [makefile](/makefile), populating the fields `COMPILER`, `COMPILER_TYPE` and `GPU_COMPUTE_CAPABILITY`. 
-The other fields `MULTITHREADED`, `DISTRIBUTED` and `GPUACCELERATED` will change across the tests. 
+Modify [makefile](/makefile), and populate the fields `COMPILER`, `COMPILER_TYPE` and `GPU_COMPUTE_CAPABILITY`. 
+You should use `gcc-8` (`COMPILER_TYPE = GNU`) preferably, though exceptions for (e.g.) CUDA-compability are ok. Any compatible `nvcc` and `mpicc` compilers are fine; if needed, aliases for these can be entered at lines 173 and 174 (`CUDA_COMPILER = nvcc` and `MPI_COMPILER = mpicc`).
 
-Then, compile `benchmark` using
+The other fields `MULTITHREADED`, `DISTRIBUTED` and `GPUACCELERATED` will change automatically across the tests. It's ok to change `COMPILER` in the makefile between different tests.
+
+To test compiling the serial `benchmark`, run
 ```bash
 make
 ```
-
-## Running tests
-
-First, ensure a results folder exists (with write permissions):
+You should check all compilers/targets used by the tests are compatible:
 ```bash
-mkdir results
+make clean
+make MULTITHREADED=1 DISTRIBUTED=0 GPUACCELERATED=0
+
+make clean
+make MULTITHREADED=1 DISTRIBUTED=1 GPUACCELERATED=0
+
+make clean
+make MULTITHREADED=0 DISTRIBUTED=0 GPUACCELERATED=1
 ```
+
+## The benchmark executable
+
+> Understanding the arguments to `benchmark` is not necessary for completing the tests.
 
 Executable `benchmark` accepts cmd arguments:
 ```bash
-./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES
+./benchmark NUM_NODES NUM_THREADS IS_GPU TEST_TYPE MEM_SIZE NUM_SAMPLES [FN_SUFFIX]
 ```
-which are each elaborated upon if `./benchmark` is called without any args.
+which are each elaborated upon if `./benchmark` is called without any args. Some of these arguments will be automatically swept by the testing scripts, and some must be provided by the user (with info about the target hardware).
 
-The first four (`NUM_NODES`, `NUM_THREADS`, `IS_GPU`, `TEST_TYPE`) vary across tests, while the latter two must be decided by the user.
-- `MEM_SIZE` is the total memory (in GiB) available per-node (or per-GPU) of the hardware.
-- `NUM_SAMPLES` is how many repetitions of the benchmark should be performed, informing the mean performance.
+Note that using `MEM_SIZE` - the amount of available per-node memory (in GiB) - `benchmark` will perform as large a simulation (allocating as large a state-vector as can fit in memory) as is possible. It is ok to specify the full memory size, since `benchmark` will factor in overheads before allocating memory.
+It is also ok to lie and declare a smaller-than-physical memory size if the otherwise simulated system is infeasibly large, and it is ok to specify any integer greater than 0 (not just powers-of-two). Some test scripts will automatically sweep this parameter.
 
-`NUM_SAMPLES` should be chosen by the user to give a reasonably accurate average performance; if the simulation is too slow (because `MEM_SIZE` is big, so the studied system is large), use fewer samples (e.g. `5`). If the simulation is very quick (e.g. << 1s), use many samples (e.g. `100`).
-
-Here are the kinds of tests to be run (note `make clean` should be re-run between recompiling for each test).
-
-serial
-```bash
-make
-./benchmark 1 1 0 0 MEM_SIZE NUM_SAMPLES
+Each execution of `benchmark` will write to file 
 ```
-
-multithreaded
-```bash
-# T is the max number of threads possible, decided by user
-make MULTITHREADED=1
-export OMP_NUM_THREADS=T 
-./benchmark 1 T 0 0 MEM_SIZE NUM_SAMPLES
+results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE][FN_SUFFIX].txt
 ```
-
-distributed
-```bash
-# T is the max number of threads possible, decided by user
-# N is the max number of available nodes, which must be a power of 2, decided by user
-make MULTITHREADED=1 DISTRIBUTED=1
-export OMP_NUM_THREADS=T
-mpirun -np N benchmark N T 0 0 MEM_SIZE NUM_SAMPLES
-```
-
-GPU
-```bash
-make GPUACCELERATED=1
-
-./benchmark 1 1 1 0 VMEM_SIZE NUM_SAMPLES
-
-./benchmark 1 1 1 1 VMEM_SIZE NUM_SAMPLES
-```
-
-All needed information will be written to files, with filenames:
-`
-results/data_[NUM_NODES]n_[NUM_THREADS]t_[IS_GPU]g_[MEM_SIZE]m_[NUM_QUBITS]q_[NUM_SAMPLES]s_test[TEST_TYPE].txt
-`
 which is unique for every differentiable test.
+
+## Running the tests
+
+View instructions for running each test [here](TESTS.md).
