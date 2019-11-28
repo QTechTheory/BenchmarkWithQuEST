@@ -22,4 +22,4 @@ for thr in ${THREAD_VALS[@]}; do
     done    
 done
 
-./benchmark 1 ${THREAD_VALS[-1]} 0 0 $MAX_NODE_MEM 1
+./benchmark 1 ${THREAD_VALS[${#THREAD_VALS[@]}-1]} 0 0 $MAX_NODE_MEM 1

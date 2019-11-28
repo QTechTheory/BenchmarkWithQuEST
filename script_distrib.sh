@@ -24,4 +24,4 @@ for nodes in ${NUM_NODES[@]}; do
     done
 done
 
-mpirun -np ${NUM_NODES[-1]} ./benchmark ${NUM_NODES[-1]} $NUM_THREADS 0 0 $MAX_NODE_MEM 1
+mpirun -np ${NUM_NODES[${#NUM_NODES[@]}-1]} ./benchmark ${NUM_NODES[${#NUM_NODES[@]}-1]} $NUM_THREADS 0 0 $MAX_NODE_MEM 1
