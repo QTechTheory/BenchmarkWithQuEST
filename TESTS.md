@@ -59,8 +59,8 @@ Then, run
 ## (3) Distributed
 [`script_distrib.sh`](script_distrib.sh) performs multi-threaded and distributed benchmarking. Using all available threads, it will perform
 distributed benchmarking using `2` nodes, `4` nodes, `8` nodes and on to as many possible (of the form `2^n`). 
-For each, it will benchmark increasingly large computations, utilising more RAM per-node, until `TIME_OUT` is surpassed.
-Finally, it performs an additional benchmark using all available resources, which may take some time (it collects only `1` sample however).
+For each, it will benchmark increasingly large computations, utilising more RAM per-node, until `TIME_OUT` is surpassed. Note it measures *weak scaling*; a 1 GiB allocation per-node will, for more employed nodes, mean a greater employment of net-memory (more 'qubits' simulated by the benchmark).
+Finally, it performs an additional benchmark using all available resources, which may take some time (it collects only `1` sample however). 
 
 Before running, modify [`script_distrib.sh`](script_distrib.sh) to set
 ```bash
