@@ -36,7 +36,7 @@ As contained in `data_1n_*t_0g_*.txt`, generated from ARCUS-B (Haswell 16-core),
 |-----------------|---------|-----------|
 | 31 qb (<64 GiB) | 16      | 224       |
 
-## (3) Distribued
+## (3) Distributed
 
 As contained in `data_*n_16t*.txt`, generated from ARCUS-B (Haswell 16-core, Infiniband interconnect), compiled with `openmpi 4`, `gcc 8.2.0`.  It is suspected multithreading was failed to be employed, except for the final 35 qubit simulation.
 
